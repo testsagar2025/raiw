@@ -1,29 +1,15 @@
-
-from fastapi import FastAPI
-from .crypto import encrypt_payload
-
-app = FastAPI(title="DeltaStudy Mirror API")
-
-@app.get("/")
-def read_root():
-    return {"status": "online", "message": "AES-256-GCM Encrypted Endpoint"}
-
-@app.get("/api/pw/batches")
-async def get_batches():
-    mock_data = {
-        "success": True, 
-        "data": [
-            {"id": "101", "name": "Physics Wallah Batch"},
-            {"id": "102", "name": "Delta Study Batch"}
-        ]
-    }
-    return {"data": encrypt_payload(mock_data)}
-
-@app.get("/api/pw/subjects/{batch_id}")
-async def get_subjects(batch_id: str):
-    mock_data = {
-        "success": True,
-        "batch_id": batch_id,
-        "subjects": [{"id": "s1", "name": "Organic Chemistry"}]
-    }
-    return {"data": encrypt_payload(mock_data)}
+from fastapi import FastAPI 
+from Crypto.Cipher import AES 
+import json, secrets 
+app = FastAPI() 
+KEY = b"maggikhalo".ljust(32, b'\0') 
+@app.get("/") 
+def root(): return {"status": "online"} 
+@app.get("/api/pw/batches") 
+def batches(): 
+    data = {"success": True, "data": [{"id": "1", "name": "Test Batch"}]} 
+    json_data = json.dumps(data).encode() 
+    nonce = secrets.token_bytes(12) 
+    cipher = AES.new(KEY, AES.MODE_GCM, nonce=nonce) 
+    ct, tag = cipher.encrypt_and_digest(json_data) 
+    return {"data": f"{nonce.hex()}:{(ct + tag).hex()}"} 
